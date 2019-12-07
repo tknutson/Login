@@ -1,4 +1,5 @@
 ﻿using Login.Models;
+using Login.Processors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -7,11 +8,15 @@ namespace Login.Controllers
 {
     public class LoginController : Controller
     {
-        private readonly ILogger<LoginController> _logger;
+        private readonly ILogger<AdminController> _logger;
+        private readonly DatabaseManager _databaseManager;
+        private readonly AppDb _db;
 
-        public LoginController(ILogger<LoginController> logger)
+        public LoginController(ILogger<AdminController> logger, DatabaseManager databaseManager, AppDb db)
         {
             _logger = logger;
+            _databaseManager = databaseManager;
+            _db = db;
         }
 
         public IActionResult Index()
@@ -19,15 +24,17 @@ namespace Login.Controllers
             return View();
         }
 
+        [HttpPost]
         public IActionResult Login(User user)
         {
             if (ModelState.IsValid)
             {
-                if (user.IsValid(user.UserName, user.Password))
+                user.Password = SHA1.Encode(user.Password);
+                if (user.IsValid(user.UserName, user.Password, _db))
                 {
                     //This needs to be refactored to work with .NET Core
                     //FormsAuthentication.SetAuthCookie(user.UserName, user.RememberMe);
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Index", "Client");
                 }
                 else
                 {
@@ -44,7 +51,7 @@ namespace Login.Controllers
         }
     }
 
-    public class SHA1
+    public static class SHA1
     {
         public static string Encode(string value)
         {

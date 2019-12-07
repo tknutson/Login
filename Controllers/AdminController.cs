@@ -1,4 +1,3 @@
-using System;
 using Login.Models;
 using Login.Processors;
 using Microsoft.AspNetCore.Mvc;
@@ -36,14 +35,12 @@ namespace Login.Controllers
         public async Task AddUser(User user)
         {
             //save user
-            
-            // await _db.Connection.OpenAsync();
+            user.Password = SHA1.Encode(user.Password);            
             var dbMgr = new DatabaseManager(_db);
-            await dbMgr.InsertAsync(user);
+            await dbMgr.AddUserAsync(user);
             
             //redirect to index
-            Redirect("Admin/Index");
-            //return View();
+            RedirectToAction("Index", "Admin");
         }
 
     }

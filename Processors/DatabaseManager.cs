@@ -18,7 +18,7 @@ namespace Login.Processors
             Db = db;
         }
 
-        public async Task InsertAsync(User user)
+        public async Task AddUserAsync(User user)
         {
             try
             {
@@ -28,30 +28,44 @@ namespace Login.Processors
                 BindParams(cmd, user);
                 Db.Connection.Open();
                 await cmd.ExecuteNonQueryAsync();
-                //Id = (int)cmd.LastInsertedId;
             }
-            catch (Exception ex)
+            catch
             {
-
+                throw;
             }
-            finally {
+            finally
+            {
                 if (Db.Connection.State.Equals(ConnectionState.Open))
                     Db.Connection.Close();
             }
         }
 
         //This should call a stored proc that checks if a given password matches the DB
-        public async Task GetAsync()
+        public bool IsPasswordValid(string username, string password)
         {
-            using var cmd = Db.Connection.CreateCommand();
-            cmd.CommandText = @"SELECT * FROM `Users` WHERE `Id` = @id;";
-            BindParams(cmd);
-            BindId(cmd);
-            await cmd.ExecuteNonQueryAsync();
+            bool valid;
+
+            Db.Connection.Open();
+            using (var cmd = Db.Connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT EXISTS(" +
+                    $"SELECT 1 FROM `Users` WHERE `Username` = @Username AND `Password` = '{password}' LIMIT 1);";
+                BindParams(cmd, new User
+                {
+                    UserName = username,
+                    Password = password
+                });
+
+                valid = Convert.ToBoolean(cmd.ExecuteScalar());
+            }
+
+            Db.Connection.Close();
+
+            return valid;
         }
 
         //Will use this to update email, phone, etc.
-        public async Task UpdateAsync()
+        public async Task UpdateUserAsync()
         {
             using var cmd = Db.Connection.CreateCommand();
             // cmd.CommandText = @"UPDATE `BlogPost` SET `Title` = @title, `Content` = @content WHERE `Id` = @id;";
@@ -61,7 +75,7 @@ namespace Login.Processors
         }
 
         //Soft delete
-        public async Task DeleteAsync()
+        public async Task DeleteUserAsync()
         {
             using var cmd = Db.Connection.CreateCommand();
             //cmd.CommandText = @"DELETE FROM `BlogPost` WHERE `Id` = @id;";
@@ -123,7 +137,5 @@ namespace Login.Processors
         {
             Connection = new MySqlConnection(connectionString);
         }
-
-        // public void Dispose() => Connection.Dispose();
     }
 }

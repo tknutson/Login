@@ -4,7 +4,7 @@
     ViewData["Title"] = "Login";
 }
 
-@using (Html.BeginForm())
+@using (Html.BeginForm("Login", "Login"))
 {
     @Html.ValidationSummary(true, "Login failed. Check your login details.");
     <div>
